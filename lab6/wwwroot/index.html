@@ -1,0 +1,279 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.0/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body>
+    <h2>Classes list</h2>
+    <form name="classForm">
+        <input type="hidden" name="id" value="0" />
+        <div class="form-group col-md-5">
+            <label for="Number">Number:</label>
+            <input class="form-control" name="Number" />
+        </div>
+        <div class="form-group col-md-5">
+            <label for="StudentsCount">Students count</label>
+            <input class="form-control" name="StudentsCount"/>
+        </div>
+        <div class="form-group col-md-5">
+            <label for="CreationYear">Creation year:</label>
+            <input class="form-control" name="CreationYear" />
+        </div>
+        <div>
+            <select name="Teacher">
+            </select>
+            <label for="Teacher">Teacher</label>
+        </div>
+        <div>
+            <select name="ClassType">
+            </select>
+            <label for="ClassType">Class type</label>
+        </div>
+        <div class="panel-body">
+            <button type="submit" id="submit" class="btn btn-primary">Save</button>
+            <a id="reset" class="btn btn-primary">Clean</a>
+        </div>
+    </form>
+    <table class="table table-condensed table-striped  col-md-6">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Number</th>
+                <th>Students count</th>
+                <th>Creation year</th>
+                <th>Teacher</th>
+                <th>ClassType</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+    <div>2022 © web api lab</div>
+    <script>
+        async function CreateTeacherList(){
+            var selectList = classForm.Teacher;
+            const response = await fetch("/api/Teachers", {
+                method: "GET",
+                headers: { "Accept": "application/json"}
+            });
+            if(response.ok === true){
+                const teachers = await response.json();
+                teachers.forEach(t => {
+                    var option = document.createElement("option");
+                    option.text = t.name + " " + t.surname + " " + t.middleName;
+                    option.value = parseInt(t.id);
+                    selectList.appendChild(option)
+                })
+            }
+
+        }
+
+        async function CreateClassTypeList() {
+            var selectList = classForm.ClassType;
+            const response = await fetch("/api/ClassTypes", {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                const classType = await response.json();
+                classType.forEach(ct => {
+                    var option = document.createElement("option");
+                    option.text = ct.name;
+                    option.value = parseInt(ct.id);
+                    selectList.appendChild(option)
+                })
+            }
+
+        }
+
+        async function GetClasses() {
+            
+            const response = await fetch("/api/Classes", {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+            });
+            
+            if (response.ok === true) {
+                
+                const classes = await response.json();
+                let rows = document.querySelector("tbody");
+                classes.forEach(c => {
+                    rows.append(row(c));
+                });
+            }
+        }
+        // Получение одного работника
+        async function GetClass(id) {
+            const response = await fetch("/api/Classes/" + id, {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                const cls = await response.json();
+                const form = document.forms["classForm"];
+                form.elements["id"].value = cls.id;
+                form.elements["Number"].value = cls.number;
+                form.elements["StudentsCount"].value = cls.studentsCount
+                form.elements["CreationYear"].value = cls.creationYear;
+                form.elements["ClassType"].value = cls.classTypeId;
+                form.elements["Teacher"].value = cls.teacherId;
+                
+            }
+        }
+
+        async function CreateClass(number, studentsCount, creationYear, classTypeId, teacherId) {
+            console.log(number)
+            console.log(studentsCount)
+            console.log(creationYear)
+            console.log(classTypeId)
+            console.log(teacherId)
+            const response = await fetch("/api/Classes", {
+                method: "POST",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    number: number,
+                    studentsCount: parseInt(studentsCount, 10),
+                    creationYear: parseInt(creationYear, 10),
+                    classTypeId: parseInt(classTypeId, 10),
+                    teacherId: parseInt(teacherId, 10),
+                 })
+            });
+            if (response.ok === true) {
+                const cls = await response.json();
+                reset();
+                document.querySelector("tbody").append(row(cls));
+            }
+        }
+        
+        async function EditClass(classId, number, studentsCount, creationYear, classTypeId, teacherId) {
+            console.log(number)
+            const response = await fetch("api/Classes", {
+                method: "PUT",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    id: parseInt(classId),
+                    number: number,
+                    studentsCount: parseInt(studentsCount, 10),
+                    creationYear: parseInt(creationYear, 10),
+                    classTypeId: parseInt(classTypeId, 10),
+                    teacherId: parseInt(teacherId, 10),
+                })
+            });
+            if (response.ok === true) {
+                const cls = await response.json();
+                reset();
+                document.querySelector("tr[data-rowid='" + classId + "']").replaceWith(row(cls));
+            }
+        }
+       
+        async function DeleteClass(id) {
+            console.log(id)
+            const response = await fetch("api/Classes/" + id, {
+                method: "DELETE",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                document.querySelector("tr[data-rowid='" + id + "']").remove();
+            }
+        }
+
+        function reset() {
+            const form = document.forms["classForm"];
+            form.reset();
+            form.elements["id"].value = 0;
+        }
+
+        function row(cls) {
+
+            const tr = document.createElement("tr");
+            tr.setAttribute("data-rowid", cls.id);
+
+            const idTd = document.createElement("td");
+            idTd.append(cls.id);
+            tr.append(idTd);
+
+            const numberTd = document.createElement("td");
+            numberTd.append(cls.number);
+            tr.append(numberTd);
+
+            const studentsCountTd = document.createElement("td");
+            studentsCountTd.append(cls.studentsCount)
+            tr.append(studentsCountTd)
+
+            const creationYearTd = document.createElement("td");
+            creationYearTd.append(cls.creationYear);
+            tr.append(creationYearTd);
+
+            const teacherTd = document.createElement("td");
+            const teacherList = classForm.Teacher;
+            teacherTd.append(teacherList.options[cls.teacherId - 1].text);
+            tr.append(teacherTd);
+
+            const classTypeTd = document.createElement("td");
+            const classTypeList = classForm.ClassType;
+            classTypeTd.append(classTypeList.options[cls.classTypeId - 1].text);
+            tr.append(classTypeTd);
+
+            const linksTd = document.createElement("td");
+
+            const editLink = document.createElement("a");
+            editLink.setAttribute("data-id", cls.id);
+            editLink.setAttribute("style", "cursor:pointer;padding:15px;");
+            editLink.append("Change");
+            editLink.addEventListener("click", e => {
+
+                e.preventDefault();
+                GetClass(cls.id);
+            });
+            linksTd.append(editLink);
+
+            const removeLink = document.createElement("a");
+            removeLink.setAttribute("data-id", cls.id);
+            removeLink.setAttribute("style", "cursor:pointer;padding:15px;");
+            removeLink.append("Delete");
+            removeLink.addEventListener("click", e => {
+
+                e.preventDefault();
+                DeleteClass(cls.id);
+            });
+
+            linksTd.append(removeLink);
+            tr.appendChild(linksTd);
+
+            return tr;
+        }
+
+        document.getElementById("reset").click(function (e) {
+
+            e.preventDefault();
+            reset();
+        })
+
+        document.forms["classForm"].addEventListener("submit", e => {
+            e.preventDefault();
+            const form = document.forms["classForm"]
+            const id = form.elements["id"].value;
+            const number = form.elements["Number"].value;
+            const studentsCount = form.elements["StudentsCount"].value;
+            const creationYear = form.elements["CreationYear"].value;
+            const teacherId = form.elements["Teacher"].value;
+            const classTypeId = form.elements["ClassType"].value;
+            if (id == 0)
+                CreateClass(number, studentsCount, creationYear, classTypeId, teacherId);
+            else
+                EditClass(id, number, studentsCount, creationYear, classTypeId, teacherId);
+        });
+
+        async function Start() {
+            await CreateTeacherList();
+            await CreateClassTypeList();
+            await GetClasses();
+        }
+        Start()
+
+    </script>
+</body>
+</html>
